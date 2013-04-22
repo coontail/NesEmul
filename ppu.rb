@@ -62,11 +62,16 @@ class Ppu
 		end
 		
 		@sprite_size = @registers[0x2000].bit?(5)
-	
-		@table_nommage_screen = @ppu[0x2000..0x23C0]   if @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 0
-		@table_nommage_screen = @ppu[0x2400..0x27C0]   if @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 1
-		@table_nommage_screen = @ppu[0x2800..0x2BC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 0
-		@table_nommage_screen = @ppu[0x2C00..0x2FC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 1
+		
+		if @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 0
+			@table_nommage_screen = @ppu[0x2000..0x23C0]
+		elsif @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 1
+			@table_nommage_screen = @ppu[0x2400..0x27C0]
+		elsif @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 0
+			@table_nommage_screen = @ppu[0x2800..0x2BC0]
+		elsif if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 1
+			@table_nommage_screen = @ppu[0x2C00..0x2FC0]
+		end
 	
 	end
 	
