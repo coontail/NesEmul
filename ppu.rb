@@ -9,7 +9,7 @@ attr_accessor :screen
 
 
 def initialize()
-	@ppu = [0]*100000
+	@ppu = [0]*0x4000
 	@registers = {}
 	Registers.each {|adresse| @registers[adresse] = 0}
 	init_affichage
@@ -68,6 +68,7 @@ def set_tables()
 	@table_nommage_screen = @ppu[0x2400..0x27C0]   if @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 1
 	@table_nommage_screen = @ppu[0x2800..0x2BC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 0
 	@table_nommage_screen = @ppu[0x2C00..0x2FC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 1
+	
 
 end
 
@@ -88,9 +89,7 @@ def draw_screen()
 		@x = 0
 		@y+=1
 	elsif @y>239
-		set_vblank
 		reset_pixel
-		@screen.flip
 	end
 
 end
