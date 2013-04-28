@@ -2,19 +2,13 @@ class Cpu
 	attr_accessor :ram
 	attr_accessor :cpu
 	attr_accessor :ppu
-<<<<<<< HEAD
 
-=======
-	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 	def initialize(rom)	
 		@ram = [0]*100000
 		@ppu = Ppu.new
 		#@oam = Oam.new
 		prg_start_index = map_rom(rom)
 		@cpu = {:Y=>0,:X=>0,:A=>0,:S=>255,:P=>0,:compteur=>prg_start_index,:compteur_new=>prg_start_index}
-<<<<<<< HEAD
 	end
 
 	def map_rom(rom)
@@ -1367,7 +1361,6 @@ class Cpu
 	
 	end
 
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 end
 
 
