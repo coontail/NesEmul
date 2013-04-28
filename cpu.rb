@@ -28,131 +28,6 @@ class Cpu
 		@ram[prg_start_index,prg_rom.length] = prg_rom # Mapping de la PRG dans la RAM
 		return prg_start_index
 	end
-
-
-	def nmi_interrupt()
-		bytefort = @cpu[:compteur_new] >> 8
-		bytefaible = @cpu[:compteur_new] & 0x00FF
-		@ram[@cpu[:S]+0x100] = bytefort # octet de poids fort
-		@cpu[:S] -= 1 #decrementation pour la prochaine valeur
-		@ram[@cpu[:S]+0x100] = bytefaible #octet de poids faible
-		@cpu[:S] -= 1
-		@ram[@cpu[:S]+0x100] = @cpu[:P] #status
-		@cpu[:S] -= 1
-		@cpu[:compteur_new] = read(0xFFFA)+(read(0xFFFB)*256)
-		@cpu[:P] = @cpu[:P].set_bit(2)
-	end
-
-
-
-	def reset_rom()
-		reset_address = @ram[0xFFFC]+(@ram[0xFFFD]*256)
-		@cpu[:compteur] = @cpu[:compteur_new] = reset_address
-	end
-
-
-	def cmp(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		sign_zero_carry @cpu[:A].int8_minus signed case opcode
-			when "C9" then arg1
-			when "C5" then read(arg1)
-			when "D5" then read(arg1+@cpu[:X])
-			when "CD" then read(arg1+(arg2*256))
-			when "DD" then read(arg1+(arg2*256)+@cpu[:X])
-			when "D9" then read(arg1+(arg2*256)+@cpu[:Y])
-			when "C1" then read(read(arg1+@cpu[:X]) + (read(arg1+@cpu[:X]+1)*256))
-			when "D1" then read(read(arg1)+(read(arg1+1)*256)+@cpu[:Y])
-		end
-	end
-
-	def asl(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		sign_zero_set_switch case zone
-			when 0x0A then @cpu[:A] << 1
-			when 0x06 then write(arg1,read(arg1) << 1)
-			when 0x16 then write(arg1+@cpu[:X], read(arg1+@cpu[:X]) << 1)
-			when 0x0E then write(arg1+(arg2*256),read(arg1+(arg2*256)) << 1)
-			when 0x1E then write(arg1+(arg2*256)+@cpu[:X],read(arg1+(arg2*256)+@cpu[:X]) << 1)
-		end
-	end
-
-	def rol(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		sign_zero_set case opcode
-			when "2A" then @cpu[:A] = rotate_left(@cpu[:A])
-			when "26" then write(arg1,rotate_left(read(arg1)))
-			when "36" then write(arg1+@cpu[:X], rotate_left(read(arg1+@cpu[:X])))
-			when "2E" then write(arg1+(arg2*256), rotate_left(read(arg1+(arg2*256))))
-			when "3E" then write(arg1+(arg2*256)+@cpu[:X], rotate_left(read(arg1+(arg2*256)+@cpu[:X])))
-		end
-
-	end
-
-	def ror(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		sign_zero_set case opcode
-			when "6A" then @cpu[:A] = rotate_right(@cpu[:A])
-			when "66" then write(arg1,rotate_right(read(arg1)))
-			when "76" then write(arg1+@cpu[:X], rotate_right(read(arg1+@cpu[:X])))
-			when "6E" then write(arg1+(arg2*256), rotate_right(read(arg1+(arg2*256))))
-			when "7E" then write(arg1+(arg2*256)+@cpu[:X], rotate_right(read(arg1+(arg2*256)+@cpu[:X])))
-		end
-
-	end
-
-	def rotate_left(byte)
-		byte.bit?(7) == 1 ? @cpu[:P] = @cpu[:P].set_bit(0) : @cpu[:P] = @cpu[:P].clear_bit(0)
-		@cpu[:P].bit?(0) == 1 ? byte = ((byte << 1)&0xFF)| 1 : byte = ((byte << 1)&0xFF)| 0
-		@cpu[:P] = @cpu[:P].clear_bit(0) if byte.bit?(7) == 0 #clear carry
-		@cpu[:P] = @cpu[:P].set_bit(0) if byte.bit?(7) == 1 #set carry
-		return byte
-	end
-
-	def rotate_right(byte)
-		byte.bit?(0) == 1 ? @cpu[:P] = @cpu[:P].set_bit(0) : @cpu[:P] = @cpu[:P].clear_bit(0)
-		@cpu[:P].bit?(0) ==1 ? byte = (byte >> 1)| 128 : byte = (byte >> 1)| 0
-		@cpu[:P] = @cpu[:P].clear_bit(0) if byte.bit?(0) == 0 #clear carry
-		@cpu[:P] = @cpu[:P].set_bit(0) if byte.bit?(0)==1 #set carry
-		return byte
-	end
-
-
-
-	def lsr(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		sign_zero_set_switch case opcode
-			when "4A" then @cpu[:A] = @cpu[:A] >> 1
-			when "46" then write(arg1,read(arg1) >> 1)
-			when "56" then write(arg1+@cpu[:X], read(arg1+@cpu[:X]) >> 1)
-			when "4E" then write(arg1+(arg2*256),read(arg1+(arg2*256)) >> 1)
-			when "5E" then write(arg1+(arg2*256)+@cpu[:X], read(arg1+(arg2*256)+@cpu[:X]) >> 1)
-		end
-	end
-
-
-
-
-=======
-	end
-	
-	
-	def map_rom(rom)
-		header = rom.shift(16)
-		if header[4] == 1
-			prg_start_index = 0xC000 #Index de mappage de la PRG (- de 16Ko de PRG)
-		else
-			prg_start_index = 0x8000 #Index de mappage de la PRG (+ de 16Ko de PRG)
-		end
-		if header[6].bit?(2) == 1
-			trainer = rom.shift(512)
-			@ram[0x7000,trainer.length] = trainer # Mapping du trainer dans la RAM
-		end
-		prg_rom = rom.shift(header[4]*16384)
-		chr_rom = rom.shift(header[5]*8192)
-		@ppu.ppu[0,chr_rom.length] = chr_rom
-		@ram[prg_start_index,prg_rom.length] = prg_rom # Mapping de la PRG dans la RAM
-		return prg_start_index
-	end
 	
 	
 	def nmi_interrupt()
@@ -257,8 +132,6 @@ class Cpu
 		end
 	end
 	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 	def cpx(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_carry @cpu[:X].int8_minus signed case opcode
@@ -267,12 +140,7 @@ class Cpu
 			when "EC" then read(arg1+(arg2*256))
 		end	
 	end
-<<<<<<< HEAD
-
-=======
 	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 	def cpy(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_carry @cpu[:Y].int8_minus signed case opcode
@@ -280,17 +148,9 @@ class Cpu
 			when "C4" then read(arg1)
 			when "CC" then read(arg1+(arg2*256))
 		end	
-<<<<<<< HEAD
-
-	end
-
-
-=======
-	
 	end
 	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
+
 	def and(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		@cpu[:A] = @cpu[:A] & case opcode
@@ -305,12 +165,7 @@ class Cpu
 		end
 		sign_zero_set(@cpu[:A])
 	end
-<<<<<<< HEAD
 
-=======
-	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 	def eor(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		@cpu[:A] = @cpu[:A] ^ case opcode
@@ -325,8 +180,6 @@ class Cpu
 		end
 		sign_zero_set(@cpu[:A])
 	end
-<<<<<<< HEAD
-
 
 	def ora(zone,arg1,arg2)
 		@cpu[:A] |= case zone
@@ -374,66 +227,7 @@ class Cpu
 	def nop(x,y,z)
 	end
 
-=======
-	
-	
-	def ora(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		@cpu[:A] |= case opcode
-			when "09" then arg1
-			when "05" then read(arg1)
-			when "15" then read(arg1+@cpu[:X])
-			when "0D" then read(arg1+(arg2*256))
-			when "1D" then read(arg1+(arg2*256)+@cpu[:X])
-			when "19" then read(arg1+(arg2*256)+@cpu[:Y])
-			when "01" then read(read(arg1+@cpu[:X]) + read(arg1+@cpu[:X]+1)*256)
-			when "11" then read(read(arg1)+(read(arg1+1)*256)+@cpu[:Y])
-		end
-		sign_zero_set(@cpu[:A])
-	end	
-	
-	
-	def clc(x,y,z)
-		@cpu[:P] = @cpu[:P].clear_bit(0)
-	end
-	
-	
-	def sec(x,y,z)
-		@cpu[:P] = @cpu[:P].set_bit(0)
-	end
-	
-	
-	def cli(x,y,z)
-		@cpu[:P] = @cpu[:P].clear_bit(2)
-	end
-	
-	
-	def sei(x,y,z)
-		@cpu[:P] = @cpu[:P].set_bit(2)
-	end
-	
-	
-	def clv(x,y,z)
-		@cpu[:P] = @cpu[:P].clear_bit(6)
-	end
-	
-	
-	def cld(x,y,z)
-		@cpu[:P] = @cpu[:P].clear_bit(3)
-	end
-	
-	
-	def sed(x,y,z)
-		@cpu[:P] = @cpu[:P].set_bit(3)
-	end
-	
-	
-	def nop(x,y,z)
-		#Eh bah ouais !
-	end
-	
-	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
+
 	def bit(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		case opcode
@@ -471,7 +265,6 @@ class Cpu
 			else
 				@cpu[:P] = @cpu[:P].clear_bit(1) #clear
 			end
-<<<<<<< HEAD
 		end
 	end
 
@@ -625,11 +418,6 @@ class Cpu
 			when "BC" then read(arg1+(arg2*256)+@cpu[:X])
 		end
 		sign_zero_set(@cpu[:Y])
-	end
-
-
-=======
-		end
 	end
 	
 	
@@ -791,7 +579,6 @@ class Cpu
 	end
 	
 	
->>>>>>> 124c499b84f9088ffdb0d58c7131459d5d723e50
 	def sta(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		case opcode
@@ -804,279 +591,8 @@ class Cpu
 			when "91" then write(read(read(arg1)+(read(arg1+1)*256)+@cpu[:Y]), @cpu[:A])
 		end
 		sign_zero_set(@cpu[:A])
-<<<<<<< HEAD
 	end
 
-	def stx(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		case opcode
-			when "86" then write(arg1, @cpu[:X])
-			when "96" then write(arg1+@cpu[:Y], @cpu[:X])
-			when "8E" then write(arg1+(arg2*256),@cpu[:X])
-		end
-		sign_zero_set(@cpu[:X])
-	end
-
-	def sty(zone,arg1,arg2)
-		opcode = zone.to_s(16).upcase
-		case opcode
-			when "84" then write(arg1, @cpu[:Y])
-			when "94" then write(arg1+@cpu[:X], @cpu[:Y])
-			when "8C" then write(arg1+(arg2*256),@cpu[:Y])
-		end
-		sign_zero_set(@cpu[:Y])
-	end
-
-
-
-	def tax(x,y,z)
-		@cpu[:X] = @cpu[:A]
-		sign_zero_set(@cpu[:X])
-	end
-
-	def txa(x,y,z)
-		@cpu[:A] = @cpu[:X]
-		sign_zero_set(@cpu[:A])
-	end
-
-	def dex(x,y,z)
-		@cpu[:X] = @cpu[:X].int8_minus(1)
-		sign_zero_clear_or_set(@cpu[:X])
-	end
-
-	def inx(x,y,z)
-		@cpu[:X] = @cpu[:X].int8_plus(1)
-		sign_zero_clear_or_set(@cpu[:X])
-	end
-
-	def tay(x,y,z)
-		@cpu[:Y] = @cpu[:A]
-		sign_zero_set(@cpu[:Y])
-	end
-
-	def tya(x,y,z)
-		@cpu[:A] = @cpu[:Y]
-		sign_zero_set(@cpu[:A])
-	end
-
-	def dey(x,y,z)
-		@cpu[:Y] = @cpu[:Y].int8_minus(1)
-		sign_zero_clear_or_set(@cpu[:Y])
-	end
-
-	def iny(x,y,z)
-		@cpu[:Y] = @cpu[:Y].int8_plus(1)
-		sign_zero_clear_or_set(@cpu[:Y])
-	end
-
-	def txs(x,y,z)
-		@cpu[:S] = @cpu[:X]
-	end
-
-	def tsx(x,y,z)
-		@cpu[:X] = @cpu[:S]
-	end
-
-	def pha(x,y,z)
-		@ram[@cpu[:S]+0x100] = @cpu[:A]
-		@cpu[:S] -= 1
-	end
-
-	def pla(x,y,z)
-		@cpu[:A] = @ram[@cpu[:S]+1+0x100]	#dernier elem
-		@cpu[:S] += 1
-	end
-
-	def php(x,y,z)
-		@ram[@cpu[:S]+0x100] = @cpu[:P]
-		@cpu[:S] -= 1
-	end
-
-	def plp(x,y,z)
-		@cpu[:A] = @ram[@cpu[:S]+1+0x100]
-		@cpu[:S] += 1	
-
-	end
-
-	def bcc(zone,arg1,arg2)
-		if @cpu[:P].bit?(0) == 0
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bcs(zone,arg1,arg2)
-		if @cpu[:P].bit?(0) == 1
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bvc(zone,arg1,arg2)
-		if @cpu[:P].bit?(6) == 0
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bvs(zone,arg1,arg2)
-		if @cpu[:P].bit?(6) == 1
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bpl(zone,arg1,arg2)
-		if @cpu[:P].bit?(7) == 0
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bmi(zone,arg1,arg2)
-		if @cpu[:P].bit?(7) == 1
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def bne(zone,arg1,arg2)
-		if @cpu[:P].bit?(1) == 0
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-	def beq(zone,arg1,arg2)
-		if @cpu[:P].bit?(1) == 1
-			@cpu[:compteur_new] = @cpu[:compteur_new]+signed(arg1)
-		end
-	end
-
-
-	def set_overflow(byte)
-		if @cpu[:A].bit?(6) != byte.bit?(6)
-			@cpu[:P] = @cpu[:P].set_bit(6)
-		end
-	end
-
-
-	def sign_zero_carry(byte)
-		if byte & 0x80 == 0
-			@cpu[:P] = @cpu[:P].set_bit(0)
-			@cpu[:P] = @cpu[:P].clear_bit(7)
-			@cpu[:P] = @cpu[:P].clear_bit(1)
-		elsif byte == 0
-			@cpu[:P] = @cpu[:P].set_bit(0)
-			@cpu[:P] = @cpu[:P].clear_bit(7)
-			@cpu[:P] = @cpu[:P].set_bit(1)
-		elsif byte & 0x80 != 0
-			@cpu[:P] = @cpu[:P].clear_bit(0)
-			@cpu[:P] = @cpu[:P].set_bit(7)
-			@cpu[:P] = @cpu[:P].clear_bit(1)
-		end
-	end
-
-	def sign_zero_clear_or_set(byte) #Clears or sets flag 
-		if byte==0
-			@cpu[:P] = @cpu[:P].set_bit(1)
-		else
-			@cpu[:P] = @cpu[:P].clear_bit(1)
-		end
-
-		if byte & 0x80 == 0
-			@cpu[:P] = @cpu[:P].clear_bit(7)
-		else
-			@cpu[:P] = @cpu[:P].set_bit(7)
-		end
-	end
-
-	def sign_zero_set(byte) #Only sets flag ( in case of load or store instruction )
-		if byte==0
-			@cpu[:P] = @cpu[:P].set_bit(1)
-		else 
-			@cpu[:P] = @cpu[:P].clear_bit(1)
-		end
-
-		if byte & 0x80 != 0
-			@cpu[:P] = @cpu[:P].set_bit(7)
-		end
-	end
-
-	def sign_zero_set_switch(byte) # S_z_set, mais avec le petit bonus "Carry" pour les opcodes de switch !
-		if byte==0
-			@cpu[:P] = @cpu[:P].set_bit(1)
-		end
-		if byte & 0x80 != 0
-			@cpu[:P] = @cpu[:P].set_bit(7)
-			@cpu[:P] = @cpu[:P].set_bit(0) #set carry
-		end
-		@cpu[:P] = @cpu[:P].clear_bit(0) if byte & 0x80 == 0 #clear carry
-	end
-
-
-
-
-
-
-
-	def read(adresse)
-
-		case adresse
-			when 0x2007
-				@ppu.registers[0x2000].bit?(2) ==1 ? @pointeur_2006+=32 : @pointeur_2006+=1
-
-		
-			when 0x2004
-				@ppu.registers[0x2003] =  @ppu.registers[0x2003].int8_plus(1)
-		end
-
-		if Registers.include?(adresse)
-			return @ppu.registers[adresse]
-		else
-			return @ram[adresse]
-		end
-	end
-
-
-
-	def write(adresse,value)
-	
-		case adresse 
-			when 0x2007
-				print value
-				@ppu.ppu[@pointeur_2006] = value
-			
-				@ppu.registers[0x2000].bit?(2) ==1 ? @pointeur_2006+=32 : @pointeur_2006+=1
-		
-			when 0x2006
-				if @pointeur_2006==nil
-					@pointeur_2006 = value
-				elsif @pointeur_2006 <= 0xFF
-					@pointeur_2006 = value + (@pointeur_2006 *256) ###CA VIENDRAIT DE Là 
-				elsif @pointeur_2006 > 0xFF
-					@pointeur_2006 = value
-				end
-				until @pointeur_2006.between?(0,0x3FFF)
-					@pointeur_2006 -= 0x4000
-				end
-
-
-			when 0x2004
-				@OAM[@ppu.registers[0x2003]] = value
-				@ppu.registers[0x2003] = @ppu.registers[0x2003].int8_plus(1)
-
-			when 0x4014
-				@OAM = @ram[value*0x100..(value*0x100)+0xFF]
-		end
-	
-		if Registers.include?(adresse)
-			@ppu.registers[adresse] = value
-			return @ppu.registers[adresse]
-		else
-			@ram[adresse] = value
-			return @ram[adresse]
-		end
-
-	end
-
-
-=======
-	end
-	
 	
 	def stx(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
