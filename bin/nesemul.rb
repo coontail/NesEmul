@@ -1,10 +1,13 @@
-require "./ppu.rb"
-require "./cpu.rb"
+#!/usr/bin/env ruby
+
+root = File.expand_path("../..", __FILE__)
 require "sdl"
 require 'json'
-require './opcodes.rb'
-require './bitwise.rb'
-#require './OAM.rb'
+require "#{root}/lib/ppu.rb"
+require "#{root}/lib/cpu.rb"
+require '#{root}/lib/opcodes.rb'
+require '#{root}/lib/bitwise.rb'
+#require '#{root}/OAM.rb'
 
 
 rom = File.open(ARGV[0]).read.bytes.to_a
