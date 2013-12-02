@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'nesemul'
-  s.version     = '0.0.1'
+  s.version     = '0.0.3'
   s.date        = '2013-12-02'
   s.summary     = "NesEmul"
   s.description = "Nes Emulator"
@@ -13,5 +13,5 @@ Gem::Specification.new do |s|
     'https://github.com/Galaad-Gauthier/NesEmul'
   s.license       = 'MIT'
   s.add_dependency "json"
-  s.add_dependency "sdl"
+  s.add_dependency "rubysdl"
 end

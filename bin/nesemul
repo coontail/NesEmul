@@ -5,8 +5,8 @@ require "sdl"
 require 'json'
 require "#{root}/lib/ppu.rb"
 require "#{root}/lib/cpu.rb"
-require '#{root}/lib/opcodes.rb'
-require '#{root}/lib/bitwise.rb'
+require "#{root}/lib/opcodes.rb"
+require "#{root}/lib/bitwise.rb"
 #require '#{root}/OAM.rb'
 
 
