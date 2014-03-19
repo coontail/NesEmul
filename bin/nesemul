@@ -17,20 +17,29 @@ $cpu.reset_rom
 
 
 def ppu_exec(cycles)
-	(3*cycles).times do
+    (3*cycles).times do
+
 		$ppu.draw_screen
-		puts $compteur_cycles
-		if $compteur_cycles.between?(0,50)
+
+		if [$ppu.x,$ppu.y] == [0,-1] or $compteur_cycles == 0
+			#puts "CLEARING VBLANK !!!"
 			$ppu.clear_vblank
 		end
-		if $compteur_cycles >= 50440
-			gets
+
+        $compteur_cycles += 1
+
+		if [$ppu.x,$ppu.y] == [0,240] or $compteur_cycles > 5000
+			# puts "SETTING VBLANK !!!"
 			$ppu.set_vblank
 			$ppu.screen.flip
-			$cpu.nmi_interrupt if $ppu.registers[0x2002].bit?(7)
+			# puts "REFRESH !!!" 
+			if $ppu.registers[0x2000].bit?(7) == 1
+              # puts "NMI INTERRUPT !!!"
+              $cpu.nmi_interrupt
+            end
 			$compteur_cycles = 0
 	    end
-		$compteur_cycles += 1
+        
 	end
 end
 

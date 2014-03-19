@@ -43,7 +43,7 @@ class Cpu
 		@ram[@cpu[:S]+0x100] = @cpu[:P] #status
 		@cpu[:S] -= 1
 		@cpu[:compteur_new] = @ram[0xFFFA]+(@ram[0xFFFB]*256)
-		@cpu[:P] = @cpu[:P].set_bit(2)
+		#@cpu[:P] = @cpu[:P].set_bit(2)
 	end
 
 

@@ -4,6 +4,8 @@ class Ppu
 	attr_accessor :ppu
 	attr_accessor :registers
 	attr_accessor :screen
+	attr_accessor :y
+	attr_accessor :x
 	
 	
 	def initialize()
@@ -22,7 +24,8 @@ class Ppu
 	
 	
 	def reset_pixel()
-		@x = @y = 0
+		@x = 0
+		@y = -1
 	end
 	
 	
@@ -43,7 +46,7 @@ class Ppu
 	
 	def color?(color)
 		rgb = case color
-			when 0 then [124,124,124]
+			when 0 then [200,200,200]
 			when 1 then [0,0,22]
 			when 2 then [0,0,18]
 			when 3 then [64,40,188]
@@ -88,7 +91,7 @@ class Ppu
 		if @x>255
 			@x = 0
 			@y+=1
-		elsif @y>239
+		elsif @y==240
 			reset_pixel
 		end
 	end
