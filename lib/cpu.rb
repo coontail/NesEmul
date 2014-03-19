@@ -1,7 +1,9 @@
 class Cpu
+
 	attr_accessor :ram
 	attr_accessor :cpu
 	attr_accessor :ppu
+
 
 	def initialize(rom)	
 		@ram = [0]*100000
@@ -10,6 +12,7 @@ class Cpu
 		prg_start_index = map_rom(rom)
 		@cpu = {:Y=>0,:X=>0,:A=>0,:S=>255,:P=>0,:compteur=>prg_start_index,:compteur_new=>prg_start_index}
 	end
+
 
 	def map_rom(rom)
 		header = rom.shift(16)
@@ -39,10 +42,9 @@ class Cpu
 		@cpu[:S] -= 1
 		@ram[@cpu[:S]+0x100] = @cpu[:P] #status
 		@cpu[:S] -= 1
-		@cpu[:compteur_new] = read(0xFFFA)+(read(0xFFFB)*256)
+		@cpu[:compteur_new] = @ram[0xFFFA]+(@ram[0xFFFB]*256)
 		@cpu[:P] = @cpu[:P].set_bit(2)
 	end
-
 
 
 	def reset_rom()
@@ -65,6 +67,7 @@ class Cpu
 		end
 	end
 
+
 	def asl(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_set_switch case zone
@@ -76,6 +79,7 @@ class Cpu
 		end
 	end
 
+
 	def rol(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_set case opcode
@@ -85,8 +89,8 @@ class Cpu
 			when "2E" then write(arg1+(arg2*256), rotate_left(read(arg1+(arg2*256))))
 			when "3E" then write(arg1+(arg2*256)+@cpu[:X], rotate_left(read(arg1+(arg2*256)+@cpu[:X])))
 		end
-
 	end
+
 
 	def ror(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
@@ -97,8 +101,8 @@ class Cpu
 			when "6E" then write(arg1+(arg2*256), rotate_right(read(arg1+(arg2*256))))
 			when "7E" then write(arg1+(arg2*256)+@cpu[:X], rotate_right(read(arg1+(arg2*256)+@cpu[:X])))
 		end
-
 	end
+
 
 	def rotate_left(byte)
 		byte.bit?(7) == 1 ? @cpu[:P] = @cpu[:P].set_bit(0) : @cpu[:P] = @cpu[:P].clear_bit(0)
@@ -117,7 +121,6 @@ class Cpu
 	end
 
 
-
 	def lsr(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_set_switch case opcode
@@ -130,8 +133,6 @@ class Cpu
 	end
 
 
-
-
 	def cpx(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_carry @cpu[:X].int8_minus signed case opcode
@@ -141,6 +142,7 @@ class Cpu
 		end	
 	end
 
+
 	def cpy(zone,arg1,arg2)
 		opcode = zone.to_s(16).upcase
 		sign_zero_carry @cpu[:Y].int8_minus signed case opcode
@@ -148,7 +150,6 @@ class Cpu
 			when "C4" then read(arg1)
 			when "CC" then read(arg1+(arg2*256))
 		end	
-
 	end
 
 
@@ -637,18 +638,11 @@ class Cpu
 	end
 
 
-
-
-
-
-
 	def read(adresse)
 
 		case adresse
 			when 0x2007
 				@ppu.registers[0x2000].bit?(2) ==1 ? @pointeur_2006+=32 : @pointeur_2006+=1
-
-		
 			when 0x2004
 				@ppu.registers[0x2003] =  @ppu.registers[0x2003].int8_plus(1)
 		end
@@ -661,12 +655,10 @@ class Cpu
 	end
 
 
-
 	def write(adresse,value)
 	
 		case adresse 
 			when 0x2007
-				print value
 				@ppu.ppu[@pointeur_2006] = value
 			
 				@ppu.registers[0x2000].bit?(2) ==1 ? @pointeur_2006+=32 : @pointeur_2006+=1

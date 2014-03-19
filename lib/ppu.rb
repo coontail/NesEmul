@@ -30,6 +30,7 @@ class Ppu
 		return (liste_octets[ligne].bit?(7-bit) | liste_octets[ligne+8].bit?(7-bit) << 1)
 	end
 	
+
 	def get_pixel(x,y)
 		set_tables
 		pos_tile = (y/8)*32+(x/8)
@@ -38,6 +39,7 @@ class Ppu
 		return pixel
 		
 	end
+
 	
 	def color?(color)
 		rgb = case color
@@ -49,7 +51,8 @@ class Ppu
 		return rgb
 	end
 	
-	def set_tables()
+
+	def set_tables
 		@sprite_pattern_table = case @registers[0x2000].bit?(3)
 			when 0 then @ppu[0x0..0x0FFF]
 			when 1 then @ppu[0x1000..0x1FFF]
@@ -66,8 +69,6 @@ class Ppu
 		@table_nommage_screen = @ppu[0x2400..0x27C0]   if @registers[0x2000].bit?(1) == 0 and @registers[0x2000].bit?(0) == 1
 		@table_nommage_screen = @ppu[0x2800..0x2BC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 0
 		@table_nommage_screen = @ppu[0x2C00..0x2FC0]   if @registers[0x2000].bit?(1) == 1 and @registers[0x2000].bit?(0) == 1
-		
-	
 	end
 	
 	
@@ -75,6 +76,7 @@ class Ppu
 		@registers[0x2002] = @registers[0x2002].set_bit(7) #Set du Vblank
 	end
 	
+
 	def clear_vblank()
 		@registers[0x2002] = @registers[0x2002].clear_bit(7) #Clear du Vblank
 	end
@@ -89,7 +91,7 @@ class Ppu
 		elsif @y>239
 			reset_pixel
 		end
-	
 	end
+
 
 end
